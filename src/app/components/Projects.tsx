@@ -81,6 +81,11 @@ export function Projects() {
   const [isDragging, setIsDragging] = useState(false);
   const dragStartX = useRef(0);
   const dragDelta = useRef(0);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const scrollRaf = useRef<number | null>(null);
+
+  // Card gap in px (matches gap-6 = 24px)
+  const GAP = 24;
 
   // Clamp index when cards per view changes
   useEffect(() => {
@@ -100,13 +105,46 @@ export function Projects() {
     return () => media.removeListener(update);
   }, []);
 
+  const getCardStep = useCallback(() => {
+    const container = containerRef.current;
+    if (!container) return 0;
+    const firstCard = container.querySelector<HTMLElement>("[data-project-card='true']");
+    const cardWidth = firstCard?.offsetWidth ?? container.clientWidth;
+    return cardWidth + GAP;
+  }, [GAP]);
+
+  const scrollToIndex = useCallback(
+    (index: number) => {
+      const container = containerRef.current;
+      if (!container) {
+        setCurrentIndex(index);
+        return;
+      }
+      const step = getCardStep();
+      const clamped = Math.max(0, Math.min(maxIndex, index));
+      if (step > 0) {
+        container.scrollTo({ left: clamped * step, behavior: "smooth" });
+      }
+      setCurrentIndex(clamped);
+    },
+    [getCardStep, maxIndex]
+  );
+
   const prev = useCallback(() => {
+    if (isMobile) {
+      scrollToIndex(currentIndex - 1);
+      return;
+    }
     setCurrentIndex((i) => Math.max(0, i - 1));
-  }, []);
+  }, [currentIndex, isMobile, scrollToIndex]);
 
   const next = useCallback(() => {
+    if (isMobile) {
+      scrollToIndex(currentIndex + 1);
+      return;
+    }
     setCurrentIndex((i) => Math.min(maxIndex, i + 1));
-  }, [maxIndex]);
+  }, [currentIndex, isMobile, maxIndex, scrollToIndex]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -142,9 +180,6 @@ export function Projects() {
     else if (dragDelta.current < -threshold) next();
     dragDelta.current = 0;
   };
-
-  // Card gap in px (matches gap-6 = 24px)
-  const GAP = 24;
 
   // Calculate translate: each card is (100% / cardsPerView) wide,
   // we shift by currentIndex cards worth
@@ -204,6 +239,7 @@ export function Projects() {
 
         {/* Carousel container */}
         <div
+          ref={containerRef}
           className={isMobile ? "overflow-x-auto" : "overflow-hidden"}
           style={{
             margin: "0 -2px",
@@ -211,6 +247,20 @@ export function Projects() {
             WebkitOverflowScrolling: isMobile ? "touch" : undefined,
             scrollSnapType: isMobile ? "x mandatory" : undefined,
           }}
+          onScroll={
+            isMobile
+              ? (e) => {
+                  if (scrollRaf.current) window.cancelAnimationFrame(scrollRaf.current);
+                  const target = e.currentTarget;
+                  scrollRaf.current = window.requestAnimationFrame(() => {
+                    const step = getCardStep();
+                    if (step <= 0) return;
+                    const index = Math.round(target.scrollLeft / step);
+                    setCurrentIndex(Math.max(0, Math.min(maxIndex, index)));
+                  });
+                }
+              : undefined
+          }
           onMouseDown={!isMobile ? (e) => handleDragStart(e.clientX) : undefined}
           onMouseMove={!isMobile ? (e) => handleDragMove(e.clientX) : undefined}
           onMouseUp={!isMobile ? handleDragEnd : undefined}
@@ -231,6 +281,7 @@ export function Projects() {
             {projects.map((p, i) => (
               <motion.div
                 key={p.name}
+                data-project-card="true"
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -316,7 +367,7 @@ export function Projects() {
               <button
                 key={i}
                 aria-label={`Go to slide ${i + 1}`}
-                onClick={() => setCurrentIndex(i)}
+                onClick={() => (isMobile ? scrollToIndex(i) : setCurrentIndex(i))}
                 className="rounded-full transition-all duration-300"
                 style={{
                   width: currentIndex === i ? "24px" : "8px",
