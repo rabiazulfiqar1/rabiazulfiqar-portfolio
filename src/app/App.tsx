@@ -12,7 +12,7 @@ import { Background } from "./components/Background";
 export default function App() {
   return (
     <div
-      className="min-h-screen relative"
+      className="min-h-screen relative overflow-x-hidden"
       style={{ background: "#0D0D1A", fontFamily: "Inter, sans-serif" }}
     >
       <Background />

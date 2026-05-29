@@ -73,6 +73,10 @@ function useCardsPerView() {
 export function Projects() {
   const cardsPerView = useCardsPerView();
   const maxIndex = Math.max(0, projects.length - cardsPerView);
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(max-width: 639px)").matches;
+  });
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const dragStartX = useRef(0);
@@ -82,6 +86,19 @@ export function Projects() {
   useEffect(() => {
     setCurrentIndex((prev) => Math.min(prev, maxIndex));
   }, [maxIndex]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const media = window.matchMedia("(max-width: 639px)");
+    const update = () => setIsMobile(media.matches);
+    update();
+    if (media.addEventListener) {
+      media.addEventListener("change", update);
+      return () => media.removeEventListener("change", update);
+    }
+    media.addListener(update);
+    return () => media.removeListener(update);
+  }, []);
 
   const prev = useCallback(() => {
     setCurrentIndex((i) => Math.max(0, i - 1));
@@ -187,22 +204,27 @@ export function Projects() {
 
         {/* Carousel container */}
         <div
-          className="overflow-hidden"
-          style={{ margin: "0 -2px", padding: "0 2px" }}
-          onMouseDown={(e) => handleDragStart(e.clientX)}
-          onMouseMove={(e) => handleDragMove(e.clientX)}
-          onMouseUp={handleDragEnd}
-          onMouseLeave={handleDragEnd}
-          onTouchStart={(e) => handleDragStart(e.touches[0].clientX)}
-          onTouchMove={(e) => handleDragMove(e.touches[0].clientX)}
-          onTouchEnd={handleDragEnd}
+          className={isMobile ? "overflow-x-auto" : "overflow-hidden"}
+          style={{
+            margin: "0 -2px",
+            padding: "0 2px",
+            WebkitOverflowScrolling: isMobile ? "touch" : undefined,
+            scrollSnapType: isMobile ? "x mandatory" : undefined,
+          }}
+          onMouseDown={!isMobile ? (e) => handleDragStart(e.clientX) : undefined}
+          onMouseMove={!isMobile ? (e) => handleDragMove(e.clientX) : undefined}
+          onMouseUp={!isMobile ? handleDragEnd : undefined}
+          onMouseLeave={!isMobile ? handleDragEnd : undefined}
+          onTouchStart={!isMobile ? (e) => handleDragStart(e.touches[0].clientX) : undefined}
+          onTouchMove={!isMobile ? (e) => handleDragMove(e.touches[0].clientX) : undefined}
+          onTouchEnd={!isMobile ? handleDragEnd : undefined}
         >
           <div
             className="flex"
             style={{
               gap: `${GAP}px`,
-              transform: `translateX(calc(${translatePercent}% + ${translateGapPx}px))`,
-              transition: isDragging ? "none" : "transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
+              transform: isMobile ? undefined : `translateX(calc(${translatePercent}% + ${translateGapPx}px))`,
+              transition: isMobile ? undefined : isDragging ? "none" : "transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
               cursor: showNavigation ? "grab" : "default",
             }}
           >
@@ -222,6 +244,7 @@ export function Projects() {
                   flex: "0 0 auto",
                   transition: "border-color 0.3s, box-shadow 0.3s, transform 0.3s",
                   userSelect: "none",
+                  scrollSnapAlign: isMobile ? "start" : undefined,
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.borderColor = "rgba(16,185,129,0.4)";

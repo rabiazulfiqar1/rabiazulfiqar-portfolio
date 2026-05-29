@@ -56,7 +56,7 @@ export function About() {
 
         <div className="grid lg:grid-cols-2 gap-12">
           {/* Left: Bio + Education */}
-          <div>
+          <div className="min-w-0">
             <h3
               className="text-xl mb-4"
               style={{
@@ -85,7 +85,7 @@ export function About() {
             </p>
 
             {/* Achievements */}
-            <div className="grid grid-cols-3 gap-3 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
               {achievements.map((a, i) => (
                 <motion.div
                   key={a.label}
@@ -177,7 +177,7 @@ export function About() {
           </div>
 
           {/* Right: Technical Skills */}
-          <div>
+          <div className="min-w-0">
             <h3
               className="text-xl mb-6"
               style={{
@@ -217,7 +217,7 @@ export function About() {
                       return (
                         <span
                           key={s}
-                          className="px-3 py-1.5 rounded-lg text-xs transition-all duration-200 hover:scale-105 cursor-default flex items-center gap-1.5"
+                          className="px-3 py-1.5 rounded-lg text-xs transition-all duration-200 hover:scale-105 cursor-default flex items-center gap-1.5 max-w-full whitespace-normal break-words"
                           style={{
                             background: "rgba(30,30,46,0.8)",
                             color: "#F1F5F9",
