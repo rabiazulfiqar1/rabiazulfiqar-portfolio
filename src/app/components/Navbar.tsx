@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Menu, X, Linkedin, Github } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -7,12 +7,26 @@ const links = ["About", "Skills", "Projects", "Experience", "Resume", "Contact"]
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const toggleRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     const h = () => setScrolled(window.scrollY > 50);
     window.addEventListener("scroll", h, { passive: true });
     return () => window.removeEventListener("scroll", h);
   }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (menuRef.current?.contains(target)) return;
+      if (toggleRef.current?.contains(target)) return;
+      setOpen(false);
+    };
+    window.addEventListener("pointerdown", onPointerDown);
+    return () => window.removeEventListener("pointerdown", onPointerDown);
+  }, [open]);
 
   const scroll = (id: string) => {
     setOpen(false);
@@ -64,8 +78,8 @@ export function Navbar() {
           ))}
         </div>
 
-        {/* Right: Social icons */}
-        <div className="hidden md:flex items-center gap-3">
+        {/* Right: Social icons + mobile toggle */}
+        <div className="flex items-center gap-3">
           <a
             href="https://www.linkedin.com/in/rabia-zulfiqar05/"
             target="_blank"
@@ -82,22 +96,25 @@ export function Navbar() {
           >
             <Github size={18} style={{ color: "#F1F5F9" }} />
           </a>
+          {/* Mobile menu button */}
+          <button
+            ref={toggleRef}
+            className="md:hidden"
+            style={{ color: "#F1F5F9" }}
+            onClick={() => setOpen(!open)}
+            aria-expanded={open}
+            aria-label="Toggle menu"
+          >
+            {open ? <X size={24} /> : <Menu size={24} />}
+          </button>
         </div>
-
-        {/* Mobile menu button */}
-        <button
-          className="md:hidden"
-          style={{ color: "#F1F5F9" }}
-          onClick={() => setOpen(!open)}
-        >
-          {open ? <X size={24} /> : <Menu size={24} />}
-        </button>
       </div>
 
       {/* Mobile dropdown */}
       <AnimatePresence>
         {open && (
           <motion.div
+            ref={menuRef}
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
@@ -114,14 +131,6 @@ export function Navbar() {
                 {l}
               </button>
             ))}
-            <div className="flex gap-3 mt-3 px-3">
-              <a href="https://www.linkedin.com/in/rabia-zulfiqar05/" target="_blank" rel="noopener noreferrer">
-                <Linkedin size={20} style={{ color: "#F1F5F9" }} />
-              </a>
-              <a href="https://github.com/rabiazulfiqar1" target="_blank" rel="noopener noreferrer">
-                <Github size={20} style={{ color: "#F1F5F9" }} />
-              </a>
-            </div>
           </motion.div>
         )}
       </AnimatePresence>
